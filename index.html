@@ -146,6 +146,10 @@ body *{cursor:none}
 .t-item{display:flex;flex-direction:column;justify-content:center;min-width:0;border-left:2px solid var(--line);padding-left:14px}
 .t-item .lbl{font-size:18px;line-height:1.25}
 .t-item .num{font-size:50px;margin-top:10px;letter-spacing:-.01em}
+.t-grid.one{grid-template-columns:minmax(0,1fr)}
+.t-grid.one .t-item{border-left:0;padding-left:6px}
+.t-grid.one .lbl{font-size:28px}
+.t-grid.one .num{font-size:108px;margin-top:12px;color:var(--cyan);letter-spacing:-.02em;text-shadow:0 0 26px rgba(67,220,255,.28)}
 .cats{flex:1 1 0}
 .vb{position:absolute;inset:0;display:flex;flex-direction:column}
 .vb svg{flex:1 1 0;min-height:0;width:100%;display:block}
@@ -598,7 +602,7 @@ function render(d){
   // төменгі қатар
   const totals = (d.totals || []).filter(t => t && String(t.label || '').trim() !== '').slice(0, 4);
   const tItems = totals.length ? totals : TOTAL_LABELS.map(l => ({label: l, value: null}));
-  let bot = '<section class="panel totals"><div class="p-title">Жалпы көрсеткіштер</div><div class="t-grid">' +
+  let bot = '<section class="panel totals"><div class="p-title">Жалпы көрсеткіштер</div><div class="t-grid' + (tItems.length === 1 ? ' one' : '') + '">' +
     tItems.map(t => '<div class="t-item"><div class="lbl">' + esc(t.label) + '</div>' + numHtml('t:' + t.label, t.value) + '</div>').join('') +
     '</div></section>';
   const qrs = [[st.qr1Title, st.qr1Url], [st.qr2Title, st.qr2Url]]
