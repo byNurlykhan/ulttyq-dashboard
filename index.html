@@ -83,7 +83,14 @@ body *{cursor:none}
 #mid{display:grid;grid-template-columns:450px minmax(0,1fr) 690px;gap:18px;min-height:0}
 
 /* сол жақ: негізгі сандар */
-.kpis{padding:26px 28px;display:flex;flex-direction:column;justify-content:space-between}
+.kpis{padding:26px 28px;display:flex;flex-direction:column;justify-content:center}
+.kpi-issued .num{font-size:72px;color:var(--cyan);letter-spacing:-.02em;margin-top:12px;text-shadow:0 0 26px rgba(67,220,255,.28)}
+.period{font-size:21px;font-weight:600;color:var(--muted);margin-top:14px}
+.flow{flex:1 1 0;min-height:0;display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:center}
+.flow-item{border-left:2px solid var(--line);padding-left:22px;min-width:0}
+.flow-item .lbl{font-size:21px}
+.flow-item .num{font-size:72px;margin-top:12px;letter-spacing:-.02em}
+.flow-item .num.v1{color:var(--cyan)}
 .kpi .lbl{font-size:21px}
 .kpi-now .num{font-size:96px;color:var(--cyan);letter-spacing:-.02em;margin-top:10px;text-shadow:0 0 26px rgba(67,220,255,.28)}
 .kpi-served .num{font-size:76px;letter-spacing:-.015em;margin-top:10px}
@@ -119,7 +126,7 @@ body *{cursor:none}
 .bar-row rect.fill{transition:width .9s cubic-bezier(.2,.7,.2,1)}
 
 /* оң жақ: кітап тізімдері */
-.booklists{flex:1 1 0;min-height:0;display:flex;flex-direction:column;gap:14px}
+.booklists{flex:1 1 0;min-height:0;min-width:0;display:flex;flex-direction:column;gap:14px}
 .bl{flex:1 1 0;min-height:0;display:flex;flex-direction:column}
 .bl-head{flex:0 0 auto;display:flex;align-items:baseline;justify-content:space-between;gap:12px;
   padding-bottom:7px;border-bottom:1px solid var(--line-soft)}
@@ -134,11 +141,11 @@ body *{cursor:none}
 /* ---------- төменгі қатар ---------- */
 #bottom{display:flex;gap:18px;min-height:0}
 #bottom .panel{padding:18px 20px;display:flex;flex-direction:column;gap:12px}
-.totals{flex:0 0 560px}
-.t-grid{flex:1 1 0;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:10px 18px;min-height:0}
+.totals{flex:1 1 0}
+.t-grid{flex:1 1 0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-rows:1fr;gap:10px 22px;min-height:0}
 .t-item{display:flex;flex-direction:column;justify-content:center;min-width:0;border-left:2px solid var(--line);padding-left:14px}
-.t-item .lbl{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.t-item .num{font-size:38px;margin-top:6px}
+.t-item .lbl{font-size:18px;line-height:1.25}
+.t-item .num{font-size:50px;margin-top:10px;letter-spacing:-.01em}
 .cats{flex:1 1 0}
 .vb{position:absolute;inset:0;display:flex;flex-direction:column}
 .vb svg{flex:1 1 0;min-height:0;width:100%;display:block}
@@ -147,7 +154,7 @@ body *{cursor:none}
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
 .vb rect.bar{transform-box:fill-box;transform-origin:50% 100%;animation:grow .9s cubic-bezier(.2,.7,.2,1) both}
 @keyframes grow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
-.qrs{flex:0 0 auto;flex-direction:row!important;gap:22px!important;align-items:center;justify-content:center}
+.qrs{flex:0 0 auto;flex-direction:row!important;gap:30px!important;align-items:center;justify-content:center;padding:18px 34px!important}
 .qr{display:flex;flex-direction:column;align-items:center;gap:10px;width:168px}
 .qr-img{width:160px;height:160px;background:#fff;border-radius:12px;padding:9px}
 .qr-img svg{display:block;width:100%;height:100%}
@@ -256,26 +263,26 @@ function fmt(n){
   i = i.replace(/\B(?=(\d{3})+(?!\d))/g, NBSP);
   return (neg ? '−' : '') + i + (f ? ',' + f : '');
 }
-function numHtml(key, value, cls){
-  return '<span class="num ' + (cls || '') + '" data-k="' + esc(key) + '" data-v="' + (isNum(value) ? value : '') + '">' + DASH + '</span>';
+function numHtml(key, value, cls, sfx){
+  return '<span class="num ' + (cls || '') + '" data-k="' + esc(key) + '" data-v="' + (isNum(value) ? value : '') + '" data-s="' + esc(sfx || '') + '">' + DASH + '</span>';
 }
 const shown = new Map();   // кілт -> экранда тұрған соңғы мән (санау анимациясы үшін)
 function animateNums(root){
   const seen = new Set();
   root.querySelectorAll('[data-k]').forEach(el => {
-    const k = el.dataset.k, raw = el.dataset.v;
+    const k = el.dataset.k, raw = el.dataset.v, sfx = el.dataset.s || '';
     seen.add(k);
     if (raw === '') { el.textContent = DASH; shown.delete(k); return; }
     const to = Number(raw);
     const from = shown.has(k) ? shown.get(k) : 0;
     shown.set(k, to);
-    if (from === to) { el.textContent = fmt(to); return; }
+    if (from === to) { el.textContent = fmt(to) + sfx; return; }
     const whole = Number.isInteger(to) && Number.isInteger(from);
     const t0 = performance.now(), dur = 900;
     (function step(now){
       const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 3);
       const v = from + (to - from) * e;
-      el.textContent = fmt(p === 1 ? to : (whole ? Math.round(v) : Math.round(v * 10) / 10));
+      el.textContent = fmt(p === 1 ? to : (whole ? Math.round(v) : Math.round(v * 10) / 10)) + sfx;
       if (p < 1 && el.isConnected) requestAnimationFrame(step);
     })(t0);
   });
@@ -567,17 +574,15 @@ function render(d){
   $('mid').innerHTML =
     // сол жақ: негізгі сандар
     '<section class="panel kpis">' +
-      '<div class="kpi kpi-now"><div class="lbl"><i class="live"></i>Қазір кітапханада</div>' + numHtml('now', main.now) + '</div>' +
-      '<div class="kpi kpi-served"><div class="lbl">Бүгін қызмет көрсетілді</div>' + numHtml('served', main.served) + '</div>' +
-      '<div class="docs"><div class="dt">Берілген құжат</div>' +
-        '<span class="dr">Бүгін</span>' + numHtml('it', main.issuedToday, 'dv') +
-        '<span class="dr">Осы ай</span>' + numHtml('im', main.issuedMonth, 'dv') +
-        '<span class="dr">Осы жыл</span>' + numHtml('iy', main.issuedYear, 'dv') +
-      '</div>' +
+      '<div class="kpi kpi-issued"><div class="lbl">Берілген құжат</div>' + numHtml('issued', main.issued) +
+        (main.issuedPeriod ? '<div class="period">' + esc(main.issuedPeriod) + '</div>' : '') + '</div>' +
     '</section>' +
     // орта: келушілер ағыны және оқырмандар
     '<div class="center">' +
-      '<section class="panel card"><div class="p-title">Бүгінгі келушілер ағыны</div><div class="box" id="hourChart"></div></section>' +
+      '<section class="panel card"><div class="p-title">Бүгінгі келушілер ағыны</div><div class="flow">' +
+        '<div class="flow-item"><div class="lbl">Келушілер саны</div>' + numHtml('visitors', main.visitors, 'v1', main.visitorsPlus ? '+' : '') + '</div>' +
+        '<div class="flow-item"><div class="lbl">Тіркелген оқырмандар</div>' + numHtml('regToday', main.registeredToday) + '</div>' +
+      '</div></section>' +
       '<section class="panel card"><div class="p-title">Жаңа тіркелген оқырмандар</div><div class="readers">' +
         '<div class="r-left">' +
           '<div class="r-new">' + numHtml('rnew', rd.newCount) + (period ? '<div class="r-period">' + esc(period) + '</div>' : '') + '</div>' +
@@ -595,8 +600,7 @@ function render(d){
   const tItems = totals.length ? totals : TOTAL_LABELS.map(l => ({label: l, value: null}));
   let bot = '<section class="panel totals"><div class="p-title">Жалпы көрсеткіштер</div><div class="t-grid">' +
     tItems.map(t => '<div class="t-item"><div class="lbl">' + esc(t.label) + '</div>' + numHtml('t:' + t.label, t.value) + '</div>').join('') +
-    '</div></section>' +
-    '<section class="panel cats"><div class="p-title">Санаттар бойынша сұраныс</div><div class="box" id="catChart"></div></section>';
+    '</div></section>';
   const qrs = [[st.qr1Title, st.qr1Url], [st.qr2Title, st.qr2Url]]
     .map(q => ({title: String(q[0] || '').trim(), url: String(q[1] || '').trim()}))
     .filter(q => q.url).map(q => ({title: q.title, svg: qrSvg(q.url)})).filter(q => q.svg);
@@ -607,8 +611,6 @@ function render(d){
   $('bottom').innerHTML = bot;
 
   // графиктер мен тізімдер (өлшем DOM-ға қойылғаннан кейін белгілі болады)
-  lineChart($('hourChart'), d.hourly);
-  barChart($('catChart'), d.categories);
   startBooks(groups);
   animateNums($('stage'));
 }
