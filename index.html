@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Қызмет көрсету деректерінің панелі</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&subset=cyrillic,cyrillic-ext,latin&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#071a3d;
+  --panel:rgba(18,46,100,.50);
+  --panel-2:rgba(30,66,134,.34);
+  --line:rgba(96,176,255,.30);
+  --line-soft:rgba(120,180,255,.14);
+  --text:#eef5ff;
+  --muted:#a3bce0;
+  --cyan:#43dcff;
+  --blue:#5aa2ff;
+  --warn:#ffb454;
+  --s:1;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{
+  width:100%;height:100%;overflow:hidden;background:var(--bg);
+  font-family:'Inter',sans-serif;color:var(--text);
+  cursor:none;user-select:none;-webkit-user-select:none;
+  -webkit-font-smoothing:antialiased;
+}
+body *{cursor:none}
+.num,.clock,.tn{font-variant-numeric:tabular-nums}
+
+#stage{
+  position:absolute;left:50%;top:50%;width:1920px;height:1080px;
+  transform:translate(-50%,-50%) scale(var(--s));transform-origin:center center;
+  padding:24px 32px 28px;
+  display:grid;grid-template-rows:96px minmax(0,1fr) 252px;gap:18px;
+  background:
+    radial-gradient(1100px 620px at 18% -8%,rgba(52,120,255,.20),transparent 62%),
+    radial-gradient(900px 560px at 96% 108%,rgba(40,200,255,.11),transparent 60%),
+    var(--bg);
+}
+
+/* ---------- жоғарғы жолақ ---------- */
+#header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:32px;
+  border-bottom:1px solid var(--line-soft);padding-bottom:14px}
+.h-left{display:flex;align-items:center;gap:24px}
+.clock{font-size:58px;font-weight:700;letter-spacing:-.01em;line-height:1}
+.date{display:flex;flex-direction:column;gap:5px}
+.date b{font-size:23px;font-weight:600}
+.date span{font-size:19px;font-weight:500;color:var(--cyan)}
+.h-center{text-align:center;max-width:1000px}
+.h-center h1{font-size:36px;font-weight:800;letter-spacing:.005em;line-height:1.12;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.h-center p{font-size:21px;font-weight:500;color:var(--muted);margin-top:7px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.h-right{display:flex;align-items:center;justify-content:flex-end;gap:24px}
+#status{display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:16px;font-weight:500;color:var(--muted);text-align:right}
+#status .st-err{color:var(--warn);font-weight:600}
+#logo{max-height:72px;max-width:260px;object-fit:contain;display:none}
+
+/* ---------- панельдер ---------- */
+.panel{
+  background:linear-gradient(180deg,var(--panel-2),var(--panel));
+  border:1px solid var(--line);border-radius:18px;
+  box-shadow:0 0 22px rgba(60,150,255,.10), inset 0 1px 0 rgba(170,215,255,.12);
+  min-width:0;min-height:0;overflow:hidden;
+}
+.p-title{font-size:20px;font-weight:700;color:var(--text);position:relative;padding-left:15px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p-title::before{content:"";position:absolute;left:0;top:50%;margin-top:-10px;width:5px;height:20px;border-radius:3px;background:linear-gradient(180deg,var(--cyan),var(--blue))}
+.lbl{font-size:17px;font-weight:500;color:var(--muted);line-height:1.2}
+.num{font-weight:800;line-height:1;white-space:nowrap}
+.empty{display:flex;align-items:center;justify-content:center;width:100%;height:100%;
+  color:var(--muted);font-size:18px;font-weight:500;text-align:center;
+  border:1px dashed var(--line-soft);border-radius:12px}
+.card{padding:18px 22px;display:flex;flex-direction:column;gap:12px}
+.box{flex:1 1 0;min-height:0;min-width:0;position:relative}
+.box > svg{display:block;position:absolute;inset:0}
+
+/* ---------- ортаңғы қатар ---------- */
+#mid{display:grid;grid-template-columns:450px minmax(0,1fr) 690px;gap:18px;min-height:0}
+
+/* сол жақ: негізгі сандар */
+.kpis{padding:26px 28px;display:flex;flex-direction:column;justify-content:space-between}
+.kpi .lbl{font-size:21px}
+.kpi-now .num{font-size:96px;color:var(--cyan);letter-spacing:-.02em;margin-top:10px;text-shadow:0 0 26px rgba(67,220,255,.28)}
+.kpi-served .num{font-size:76px;letter-spacing:-.015em;margin-top:10px}
+.live{display:inline-block;width:11px;height:11px;border-radius:50%;background:var(--cyan);margin-right:10px;vertical-align:middle;animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.docs{display:grid;grid-template-columns:1fr auto;align-items:baseline}
+.docs .dt{grid-column:1 / 3;font-size:21px;font-weight:500;color:var(--muted);padding-bottom:10px}
+.docs .dr{font-size:20px;font-weight:500;color:var(--muted);padding:11px 0;border-top:1px solid var(--line-soft)}
+.docs .dv{font-size:42px;text-align:right;padding:11px 0;border-top:1px solid var(--line-soft)}
+
+/* орта: график пен оқырмандар */
+.center{display:grid;grid-template-rows:minmax(0,1fr) minmax(0,1fr);gap:18px;min-height:0;min-width:0}
+.readers{flex:1 1 0;min-height:0;display:grid;grid-template-columns:220px minmax(0,1fr);gap:26px}
+.r-left{display:flex;flex-direction:column;justify-content:space-between;min-width:0}
+.r-new .lbl{font-size:16px}
+.r-new .num{font-size:60px;color:var(--cyan);margin-top:6px}
+.r-period{font-size:15px;font-weight:500;color:var(--muted);margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gender{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px}
+.gender .lbl{font-size:15px}
+.gender .num{font-size:30px;margin-top:4px}
+.gender .g2{text-align:right}
+.gender svg{grid-column:1 / 3;display:block;width:100%;height:10px}
+.r-right{display:flex;flex-direction:column;gap:6px;min-width:0;min-height:0}
+.r-right .lbl{font-size:16px}
+
+/* горизонталь жолақтар */
+.bars{display:flex;flex-direction:column;justify-content:flex-start;height:100%}
+.bar-row{flex:0 1 46px;min-height:0;display:flex;flex-direction:column;justify-content:center}
+.bar-top{display:flex;align-items:baseline;gap:10px}
+.bar-name{flex:1 1 auto;min-width:0;font-size:17px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-cnt{flex:0 0 auto;font-size:19px}
+.bar-row svg{display:block;width:100%;height:7px;margin-top:5px}
+.bar-row rect.fill{transition:width .9s cubic-bezier(.2,.7,.2,1)}
+
+/* оң жақ: кітап тізімдері */
+.booklists{flex:1 1 0;min-height:0;display:flex;flex-direction:column;gap:14px}
+.bl{flex:1 1 0;min-height:0;display:flex;flex-direction:column}
+.bl-head{flex:0 0 auto;display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+  padding-bottom:7px;border-bottom:1px solid var(--line-soft)}
+.bl-name{font-size:19px;font-weight:700;color:var(--cyan);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bl-page{flex:0 0 auto;font-size:15px;font-weight:600;color:var(--muted)}
+.bl-list{flex:1 1 0;min-height:0;overflow:hidden;transition:opacity .4s ease}
+.bl-row{height:33px;display:flex;align-items:center;gap:11px}
+.rank{flex:0 0 auto;min-width:27px;height:25px;padding:0 5px;border-radius:8px;background:rgba(90,162,255,.22);color:var(--cyan);
+  font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.bl-row .t{flex:1 1 auto;min-width:0;font-size:18px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ---------- төменгі қатар ---------- */
+#bottom{display:flex;gap:18px;min-height:0}
+#bottom .panel{padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.totals{flex:0 0 560px}
+.t-grid{flex:1 1 0;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:10px 18px;min-height:0}
+.t-item{display:flex;flex-direction:column;justify-content:center;min-width:0;border-left:2px solid var(--line);padding-left:14px}
+.t-item .lbl{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.t-item .num{font-size:38px;margin-top:6px}
+.cats{flex:1 1 0}
+.vb{position:absolute;inset:0;display:flex;flex-direction:column}
+.vb svg{flex:1 1 0;min-height:0;width:100%;display:block}
+.vb-labels{flex:0 0 38px;display:grid;padding-top:5px}
+.vb-labels span{font-size:14px;font-weight:500;color:var(--muted);text-align:center;line-height:1.15;padding:0 3px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.vb rect.bar{transform-box:fill-box;transform-origin:50% 100%;animation:grow .9s cubic-bezier(.2,.7,.2,1) both}
+@keyframes grow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+.qrs{flex:0 0 auto;flex-direction:row!important;gap:22px!important;align-items:center;justify-content:center}
+.qr{display:flex;flex-direction:column;align-items:center;gap:10px;width:168px}
+.qr-img{width:160px;height:160px;background:#fff;border-radius:12px;padding:9px}
+.qr-img svg{display:block;width:100%;height:100%}
+.qr span{font-size:16px;font-weight:600;text-align:center;line-height:1.15;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+/* ---------- күй хабарламалары ---------- */
+#message{grid-row:2 / 4;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;text-align:center}
+#message h2{font-size:44px;font-weight:700}
+#message p{font-size:22px;color:var(--muted);font-weight:500;max-width:1100px;line-height:1.4}
+
+/* ---------- skeleton ---------- */
+.sk{border-radius:18px;border:1px solid var(--line-soft);
+  background:linear-gradient(100deg,rgba(40,80,150,.22) 30%,rgba(90,150,240,.30) 50%,rgba(40,80,150,.22) 70%);
+  background-size:300% 100%;animation:shimmer 1.8s linear infinite}
+@keyframes shimmer{from{background-position:120% 0}to{background-position:-80% 0}}
+.sk-line{height:34px;width:560px;border-radius:10px;margin:0 auto}
+.sk-line.s2{height:20px;width:380px;margin-top:10px}
+
+body.loading #bottom .sk{flex:1 1 0}
+body.state-message #mid,body.state-message #bottom{display:none}
+body.state-message #message{display:flex}
+</style>
+</head>
+<body class="loading">
+<div id="stage">
+  <header id="header">
+    <div class="h-left">
+      <div class="clock" id="clock"></div>
+      <div class="date"><b id="date"></b><span id="weekday"></span></div>
+    </div>
+    <div class="h-center" id="titleBox">
+      <div class="sk sk-line"></div><div class="sk sk-line s2"></div>
+    </div>
+    <div class="h-right">
+      <div id="status"></div>
+      <img id="logo" alt="">
+    </div>
+  </header>
+
+  <div id="mid">
+    <div class="sk"></div>
+    <div class="sk"></div>
+    <div class="sk"></div>
+  </div>
+  <div id="bottom">
+    <div class="sk"></div>
+    <div class="sk"></div>
+  </div>
+
+  <div id="message"><h2 id="msgTitle"></h2><p id="msgText"></p></div>
+</div>
+
+<script>
+/* =====================================================================
+   БАПТАУ: Apps Script Web App сілтемесін осы жерге қойыңыз
+   (https://script.google.com/macros/s/....../exec)
+   ===================================================================== */
+const API_URL = 'https://script.google.com/macros/s/AKfycbwrmcE9J7uyPTs3R57b5IuOXNCT3ZsocrUA6Tt9xHLBYhnomKc7GrdafzKAMt9h6dKjtw/exec';
+
+const DEFAULT_REFRESH_SEC = 30;   // "Баптаулар" парағында жаңарту_аралығы_сек бос болса
+const MIN_REFRESH_SEC = 30;
+const FETCH_TIMEOUT_MS = 20000;
+const STORAGE_KEY = 'dashboard-last-ok-v2';
+const MAX_BOOK_GROUPS = 3;        // кітап тізімдерінің (қызметтердің) ең көп саны
+const BOOK_ROW_H = 33;            // .bl-row биіктігімен бірдей болуы керек
+const BOOK_PAGE_SEC = 9;          // ұзын тізім беттерінің ауысу аралығы
+const MAX_STATUS = 5;             // әлеуметтік мәртебе: ең үлкен топтар саны
+const MAX_CATEGORIES = 10;
+
+const DASH = '—';
+const NO_DATA = 'Дерек енгізілмеген';
+const NBSP = ' ';
+const WEEKDAYS = ['жексенбі','дүйсенбі','сейсенбі','сәрсенбі','бейсенбі','жұма','сенбі'];
+const MONTHS = ['қаңтар','ақпан','наурыз','сәуір','мамыр','маусым','шілде','тамыз','қыркүйек','қазан','қараша','желтоқсан'];
+const TOTAL_LABELS = ['Жалпы кітап қоры','Тіркелген оқырмандар','Жалпы қызмет көрсету','Жалпы берілген құжат'];
+
+const $ = id => document.getElementById(id);
+const isNum = v => typeof v === 'number' && isFinite(v);
+const pad2 = n => String(n).padStart(2, '0');
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- масштаб: 1920x1080 кез келген экранға ---------- */
+function fit(){
+  const s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+  document.documentElement.style.setProperty('--s', s);
+}
+window.addEventListener('resize', fit); fit();
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+/* ---------- сағат (құрылғы уақыты) ---------- */
+function tick(){
+  const d = new Date();
+  $('clock').textContent = pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + ':' + pad2(d.getSeconds());
+  $('date').textContent = d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear() + ' ж.';
+  $('weekday').textContent = WEEKDAYS[d.getDay()];
+}
+tick(); setInterval(tick, 1000);
+
+/* ---------- сандар ---------- */
+function fmt(n){
+  if (!isNum(n)) return DASH;
+  const neg = n < 0; n = Math.abs(n);
+  let s = Number.isInteger(n) ? String(n) : n.toFixed(1);
+  let [i, f] = s.split('.');
+  i = i.replace(/\B(?=(\d{3})+(?!\d))/g, NBSP);
+  return (neg ? '−' : '') + i + (f ? ',' + f : '');
+}
+function numHtml(key, value, cls){
+  return '<span class="num ' + (cls || '') + '" data-k="' + esc(key) + '" data-v="' + (isNum(value) ? value : '') + '">' + DASH + '</span>';
+}
+const shown = new Map();   // кілт -> экранда тұрған соңғы мән (санау анимациясы үшін)
+function animateNums(root){
+  const seen = new Set();
+  root.querySelectorAll('[data-k]').forEach(el => {
+    const k = el.dataset.k, raw = el.dataset.v;
+    seen.add(k);
+    if (raw === '') { el.textContent = DASH; shown.delete(k); return; }
+    const to = Number(raw);
+    const from = shown.has(k) ? shown.get(k) : 0;
+    shown.set(k, to);
+    if (from === to) { el.textContent = fmt(to); return; }
+    const whole = Number.isInteger(to) && Number.isInteger(from);
+    const t0 = performance.now(), dur = 900;
+    (function step(now){
+      const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+      const v = from + (to - from) * e;
+      el.textContent = fmt(p === 1 ? to : (whole ? Math.round(v) : Math.round(v * 10) / 10));
+      if (p < 1 && el.isConnected) requestAnimationFrame(step);
+    })(t0);
+  });
+  [...shown.keys()].forEach(k => { if (!seen.has(k)) shown.delete(k); });
+}
+
+/* ---------- SVG: сызықтық график ---------- */
+let uid = 0;
+function fmtHour(h){
+  const hh = Math.floor(h), mm = Math.round((h - hh) * 60);
+  return pad2(hh) + ':' + pad2(mm);
+}
+function niceMax(m){
+  if (!(m > 0)) return 1;
+  const p = Math.pow(10, Math.floor(Math.log10(m))), n = m / p;
+  const k = n <= 1 ? 1 : n <= 2 ? 2 : n <= 4 ? 4 : n <= 5 ? 5 : n <= 8 ? 8 : 10;
+  return k * p;
+}
+function lineChart(el, list){
+  const pts = (list || []).filter(p => p && isNum(p.hour) && isNum(p.count)).sort((a, b) => a.hour - b.hour);
+  if (!pts.length) { el.innerHTML = '<div class="empty">' + NO_DATA + '</div>'; return; }
+  const W = el.clientWidth, H = el.clientHeight;
+  if (W < 20 || H < 20) return;
+  const m = {l:54, r:20, t:28, b:32};
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const h0 = pts[0].hour, h1 = pts[pts.length - 1].hour;
+  const top = niceMax(Math.max.apply(null, pts.map(p => p.count)));
+  const X = h => h1 === h0 ? m.l + iw / 2 : m.l + (h - h0) / (h1 - h0) * iw;
+  const Y = v => m.t + ih - Math.max(0, v) / top * ih;
+  const id = 'g' + (++uid);
+  let s = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" font-family="Inter, sans-serif">';
+  s += '<defs><linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#43dcff" stop-opacity=".38"/><stop offset="1" stop-color="#43dcff" stop-opacity="0"/></linearGradient></defs>';
+  [0, .5, 1].forEach(f => {
+    const y = Y(top * f);
+    s += '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + y + '" y2="' + y + '" stroke="rgba(140,190,255,.16)" stroke-width="1"/>';
+    s += '<text x="' + (m.l - 10) + '" y="' + (y + 5) + '" text-anchor="end" fill="#a3bce0" font-size="15" font-weight="500" style="font-variant-numeric:tabular-nums">' + fmt(top * f) + '</text>';
+  });
+  const xy = pts.map(p => [X(p.hour), Y(p.count)]);
+  if (pts.length > 1) {
+    const d = xy.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+    s += '<path d="' + d + ' L' + xy[xy.length - 1][0].toFixed(1) + ' ' + Y(0) + ' L' + xy[0][0].toFixed(1) + ' ' + Y(0) + ' Z" fill="url(#' + id + ')"/>';
+    s += '<path d="' + d + '" fill="none" stroke="#43dcff" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>';
+  }
+  const every = Math.max(1, Math.ceil(pts.length * 58 / iw));
+  pts.forEach((p, i) => {
+    const x = xy[i][0], y = xy[i][1];
+    s += '<circle cx="' + x + '" cy="' + y + '" r="5" fill="#071a3d" stroke="#43dcff" stroke-width="3"/>';
+    if (i % every === 0) s += '<text x="' + x + '" y="' + (H - 8) + '" text-anchor="middle" fill="#a3bce0" font-size="16" font-weight="500">' + fmtHour(p.hour) + '</text>';
+    if (pts.length <= 14) s += '<text x="' + x + '" y="' + Math.max(16, y - 12) + '" text-anchor="middle" fill="#eef5ff" font-size="16" font-weight="700">' + fmt(p.count) + '</text>';
+  });
+  el.innerHTML = s + '</svg>';
+}
+
+/* ---------- SVG: тік бағандар ---------- */
+function sortRating(list, max){
+  return (list || []).filter(r => r && String(r.name || '').trim() !== '')
+    .slice().sort((a, b) => (isNum(b.count) ? b.count : -Infinity) - (isNum(a.count) ? a.count : -Infinity))
+    .slice(0, max);
+}
+function barChart(el, list){
+  // бағандар саны блок еніне қарай: жазулар оқылатындай кемінде ~76px
+  const items = sortRating(list, Math.max(3, Math.min(MAX_CATEGORIES, Math.floor(el.clientWidth / 76))));
+  if (!items.length) { el.innerHTML = '<div class="empty">' + NO_DATA + '</div>'; return; }
+  el.innerHTML = '<div class="vb"><svg></svg><div class="vb-labels" style="grid-template-columns:repeat(' + items.length + ',1fr)">' +
+    items.map(r => '<span>' + esc(r.name) + '</span>').join('') + '</div></div>';
+  const svg = el.querySelector('svg');
+  const W = svg.clientWidth, H = svg.clientHeight;
+  if (W < 20 || H < 20) return;
+  const id = 'g' + (++uid);
+  const col = W / items.length, bw = Math.min(54, col * .5);
+  const topPad = 24, base = H - 1;
+  const max = Math.max.apply(null, items.map(r => isNum(r.count) ? r.count : 0));
+  let s = '<defs><linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#43dcff"/><stop offset="1" stop-color="#3f7dff" stop-opacity=".75"/></linearGradient></defs>';
+  s += '<line x1="0" x2="' + W + '" y1="' + base + '" y2="' + base + '" stroke="rgba(140,190,255,.25)" stroke-width="1"/>';
+  items.forEach((r, i) => {
+    const cx = col * i + col / 2;
+    let h = 0;
+    if (isNum(r.count) && max > 0) h = Math.max(3, r.count / max * (base - topPad));
+    if (h > 0) s += '<rect class="bar" x="' + (cx - bw / 2) + '" y="' + (base - h) + '" width="' + bw + '" height="' + h + '" rx="6" fill="url(#' + id + ')"/>';
+    s += '<text x="' + cx + '" y="' + (base - h - 7) + '" text-anchor="middle" fill="#eef5ff" font-size="17" font-weight="700" font-family="Inter, sans-serif" style="font-variant-numeric:tabular-nums">' + fmt(r.count) + '</text>';
+  });
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  svg.innerHTML = s;
+}
+
+/* ---------- горизонталь жолақтар (әлеуметтік мәртебе) ---------- */
+function hbarsHtml(list, max, keyPrefix){
+  const items = sortRating(list, max);
+  if (!items.length) return '<div class="empty">' + NO_DATA + '</div>';
+  const top = Math.max.apply(null, items.map(r => isNum(r.count) ? r.count : 0));
+  return '<div class="bars">' + items.map(r => {
+    const w = isNum(r.count) && top > 0 ? Math.max(1, r.count / top * 100) : 0;
+    return '<div class="bar-row"><div class="bar-top"><span class="bar-name">' + esc(r.name) + '</span>' +
+      numHtml(keyPrefix + r.name, r.count, 'bar-cnt') + '</div>' +
+      '<svg><rect width="100%" height="7" rx="3.5" fill="rgba(120,170,255,.16)"/>' +
+      '<rect class="fill" width="' + w.toFixed(2) + '%" height="7" rx="3.5" fill="#43dcff"/></svg></div>';
+  }).join('') + '</div>';
+}
+function genderBar(male, female){
+  if (!isNum(male) || !isNum(female) || male + female <= 0) return '';
+  const p = male / (male + female) * 100;
+  return '<svg><rect width="100%" height="10" rx="5" fill="#5aa2ff"/><rect width="' + p.toFixed(2) + '%" height="10" rx="5" fill="#43dcff"/></svg>';
+}
+
+/* ---------- кітап тізімдері (қызметтер бойынша, сансыз) ---------- */
+let bookTimer = null;
+function booksHtml(groups){
+  if (!groups.length) return '<div class="empty">' + NO_DATA + '</div>';
+  return '<div class="booklists">' + groups.map(g =>
+    '<div class="bl"><div class="bl-head"><span class="bl-name">' + esc(g.service) + '</span><span class="bl-page tn"></span></div>' +
+    '<div class="bl-list"></div></div>').join('') + '</div>';
+}
+function startBooks(groups){
+  clearInterval(bookTimer); bookTimer = null;
+  const state = [...document.querySelectorAll('.bl')].map((el, i) => {
+    const list = el.querySelector('.bl-list');
+    const per = Math.max(1, Math.floor(list.clientHeight / BOOK_ROW_H));
+    return {list: list, pageEl: el.querySelector('.bl-page'), items: groups[i].items, per: per, page: 0, pages: Math.ceil(groups[i].items.length / per)};
+  });
+  const draw = s => {
+    const a = s.page * s.per;
+    s.list.innerHTML = s.items.slice(a, a + s.per).map((t, j) =>
+      '<div class="bl-row"><span class="rank tn">' + (a + j + 1) + '</span><span class="t">' + esc(t) + '</span></div>').join('');
+    s.pageEl.textContent = s.pages > 1 ? (s.page + 1) + ' / ' + s.pages : '';
+  };
+  state.forEach(draw);
+  if (state.some(s => s.pages > 1)) {
+    bookTimer = setInterval(() => {
+      state.forEach(s => {
+        if (s.pages < 2) return;
+        s.list.style.opacity = 0;
+        setTimeout(() => { s.page = (s.page + 1) % s.pages; draw(s); s.list.style.opacity = 1; }, 420);
+      });
+    }, BOOK_PAGE_SEC * 1000);
+  }
+}
+
+/* ---------- QR-код генераторы (байт режимі, M деңгейі) ---------- */
+function qrMatrix(text){
+  const ECC = [10,16,26,18,24,16,18,22,22,26,30,22,22,24,24,28,28,26,26,26,26,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28];
+  const BLK = [1,1,1,2,2,4,4,4,5,5,5,8,9,9,10,10,11,13,14,16,17,17,18,20,21,23,25,26,28,29,31,33,35,37,38,40,43,45,47,49];
+  const bytes = Array.from(new TextEncoder().encode(text));
+  const rawModules = v => { let r = (16 * v + 128) * v + 64; if (v >= 2) { const a = Math.floor(v / 7) + 2; r -= (25 * a - 10) * a - 55; if (v >= 7) r -= 36; } return r; };
+  const dataCw = v => Math.floor(rawModules(v) / 8) - ECC[v - 1] * BLK[v - 1];
+  let ver = 0;
+  for (let v = 1; v <= 40; v++) { if (4 + (v < 10 ? 8 : 16) + bytes.length * 8 <= dataCw(v) * 8) { ver = v; break; } }
+  if (!ver) return null;
+
+  // дерек биттері
+  const bits = [];
+  const push = (val, len) => { for (let i = len - 1; i >= 0; i--) bits.push((val >>> i) & 1); };
+  push(4, 4); push(bytes.length, ver < 10 ? 8 : 16); bytes.forEach(b => push(b, 8));
+  const cap = dataCw(ver) * 8;
+  push(0, Math.min(4, cap - bits.length));
+  push(0, (8 - bits.length % 8) % 8);
+  for (let p = 0xEC; bits.length < cap; p ^= 0xEC ^ 0x11) push(p, 8);
+  const data = [];
+  for (let i = 0; i < bits.length; i += 8) { let b = 0; for (let j = 0; j < 8; j++) b = (b << 1) | bits[i + j]; data.push(b); }
+
+  // Рид-Соломон
+  const mul = (x, y) => { let z = 0; for (let i = 7; i >= 0; i--) { z = (z << 1) ^ ((z >>> 7) * 0x11D); z ^= ((y >>> i) & 1) * x; } return z; };
+  const eccLen = ECC[ver - 1], nb = BLK[ver - 1];
+  const div = []; for (let i = 0; i < eccLen - 1; i++) div.push(0); div.push(1);
+  for (let i = 0, root = 1; i < eccLen; i++) {
+    for (let j = 0; j < div.length; j++) { div[j] = mul(div[j], root); if (j + 1 < div.length) div[j] ^= div[j + 1]; }
+    root = mul(root, 2);
+  }
+  const rsRem = d => { const r = div.map(() => 0); d.forEach(b => { const f = b ^ r.shift(); r.push(0); div.forEach((c, i) => { r[i] ^= mul(c, f); }); }); return r; };
+  const rawCw = Math.floor(rawModules(ver) / 8);
+  const nShort = nb - rawCw % nb, shortLen = Math.floor(rawCw / nb);
+  const blocks = [];
+  for (let i = 0, k = 0; i < nb; i++) {
+    const dat = data.slice(k, k + shortLen - eccLen + (i < nShort ? 0 : 1)); k += dat.length;
+    const ecc = rsRem(dat);
+    if (i < nShort) dat.push(0);
+    blocks.push(dat.concat(ecc));
+  }
+  const all = [];
+  for (let i = 0; i < blocks[0].length; i++) blocks.forEach((b, j) => { if (i !== shortLen - eccLen || j >= nShort) all.push(b[i]); });
+
+  // матрица
+  const size = ver * 4 + 17;
+  const M = [], F = [];
+  for (let y = 0; y < size; y++) { M.push(new Array(size).fill(false)); F.push(new Array(size).fill(false)); }
+  const setF = (x, y, v) => { M[y][x] = !!v; F[y][x] = true; };
+  for (let i = 0; i < size; i++) { setF(6, i, i % 2 === 0); setF(i, 6, i % 2 === 0); }
+  const finder = (cx, cy) => { for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) { const d = Math.max(Math.abs(dx), Math.abs(dy)), x = cx + dx, y = cy + dy; if (x >= 0 && x < size && y >= 0 && y < size) setF(x, y, d !== 2 && d !== 4); } };
+  finder(3, 3); finder(size - 4, 3); finder(3, size - 4);
+  let align = [];
+  if (ver > 1) {
+    const n = Math.floor(ver / 7) + 2, step = ver === 32 ? 26 : Math.ceil((ver * 4 + 4) / (n * 2 - 2)) * 2;
+    align = [6]; for (let pos = size - 7; align.length < n; pos -= step) align.splice(1, 0, pos);
+  }
+  const na = align.length;
+  for (let i = 0; i < na; i++) for (let j = 0; j < na; j++) {
+    if ((i === 0 && j === 0) || (i === 0 && j === na - 1) || (i === na - 1 && j === 0)) continue;
+    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) setF(align[i] + dx, align[j] + dy, Math.max(Math.abs(dx), Math.abs(dy)) !== 1);
+  }
+  const drawFormat = mask => {
+    const d = mask;            // M деңгейінің формат биттері = 0
+    let rem = d;
+    for (let i = 0; i < 10; i++) rem = (rem << 1) ^ ((rem >>> 9) * 0x537);
+    const b = ((d << 10) | rem) ^ 0x5412;
+    const bit = i => ((b >>> i) & 1) !== 0;
+    for (let i = 0; i <= 5; i++) setF(8, i, bit(i));
+    setF(8, 7, bit(6)); setF(8, 8, bit(7)); setF(7, 8, bit(8));
+    for (let i = 9; i < 15; i++) setF(14 - i, 8, bit(i));
+    for (let i = 0; i < 8; i++) setF(size - 1 - i, 8, bit(i));
+    for (let i = 8; i < 15; i++) setF(8, size - 15 + i, bit(i));
+    setF(8, size - 8, true);
+  };
+  drawFormat(0);
+  if (ver >= 7) {
+    let rem = ver;
+    for (let i = 0; i < 12; i++) rem = (rem << 1) ^ ((rem >>> 11) * 0x1F25);
+    const b = (ver << 12) | rem;
+    for (let i = 0; i < 18; i++) { const v = ((b >>> i) & 1) !== 0, a = size - 11 + i % 3, c = Math.floor(i / 3); setF(a, c, v); setF(c, a, v); }
+  }
+  // дерек модульдерін орналастыру (зигзаг)
+  let k = 0;
+  for (let right = size - 1; right >= 1; right -= 2) {
+    if (right === 6) right = 5;
+    for (let vert = 0; vert < size; vert++) for (let j = 0; j < 2; j++) {
+      const x = right - j, up = ((right + 1) & 2) === 0, y = up ? size - 1 - vert : vert;
+      if (!F[y][x] && k < all.length * 8) { M[y][x] = ((all[k >>> 3] >>> (7 - (k & 7))) & 1) !== 0; k++; }
+    }
+  }
+  // маска таңдау
+  const maskFn = [
+    (x, y) => (x + y) % 2 === 0, (x, y) => y % 2 === 0, (x, y) => x % 3 === 0, (x, y) => (x + y) % 3 === 0,
+    (x, y) => (Math.floor(x / 3) + Math.floor(y / 2)) % 2 === 0, (x, y) => x * y % 2 + x * y % 3 === 0,
+    (x, y) => (x * y % 2 + x * y % 3) % 2 === 0, (x, y) => ((x + y) % 2 + x * y % 3) % 2 === 0
+  ];
+  const applyMask = m => { for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) if (!F[y][x] && maskFn[m](x, y)) M[y][x] = !M[y][x]; };
+  const penalty = () => {
+    let p = 0, dark = 0;
+    for (let a = 0; a < size; a++) {
+      let row = '', colS = '';
+      for (let b = 0; b < size; b++) { row += M[a][b] ? '1' : '0'; colS += M[b][a] ? '1' : '0'; if (M[a][b]) dark++; }
+      [row, colS].forEach(str => {
+        (str.match(/0{5,}|1{5,}/g) || []).forEach(r => { p += r.length - 2; });
+        let idx = -1; while ((idx = str.indexOf('10111010000', idx + 1)) !== -1) p += 40;
+        idx = -1; while ((idx = str.indexOf('00001011101', idx + 1)) !== -1) p += 40;
+      });
+    }
+    for (let y = 0; y < size - 1; y++) for (let x = 0; x < size - 1; x++) { const c = M[y][x]; if (c === M[y][x + 1] && c === M[y + 1][x] && c === M[y + 1][x + 1]) p += 3; }
+    const total = size * size;
+    p += (Math.ceil(Math.abs(dark * 20 - total * 10) / total) - 1) * 10;
+    return p;
+  };
+  let best = 0, bestP = Infinity;
+  for (let m = 0; m < 8; m++) { applyMask(m); drawFormat(m); const p = penalty(); if (p < bestP) { bestP = p; best = m; } applyMask(m); }
+  applyMask(best); drawFormat(best);
+  return M;
+}
+function qrSvg(text){
+  const m = qrMatrix(text);
+  if (!m) return '';
+  const n = m.length, q = 2;
+  let d = '';
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (m[y][x]) d += 'M' + (x + q) + ' ' + (y + q) + 'h1v1h-1z';
+  return '<svg viewBox="0 0 ' + (n + q * 2) + ' ' + (n + q * 2) + '" shape-rendering="crispEdges"><path d="' + d + '" fill="#06142e"/></svg>';
+}
+
+/* ---------- панель құрастыру ---------- */
+function render(d){
+  const st = d.settings || {};
+  const main = d.main || {};
+  const rd = d.readers || {};
+  const groups = (d.books || []).filter(g => g && g.items && g.items.length).slice(0, MAX_BOOK_GROUPS);
+
+  // тақырып пен логотип
+  const title = String(st.title || '').trim();
+  const cut = title.indexOf('. ');
+  $('titleBox').innerHTML = !title ? '<h1>' + DASH + '</h1>'
+    : cut > 0 ? '<h1>' + esc(title.slice(0, cut)) + '</h1><p>' + esc(title.slice(cut + 2)) + '</p>'
+    : '<h1>' + esc(title) + '</h1>';
+  const logo = $('logo'), logoUrl = String(st.logoUrl || '').trim();
+  if (logoUrl) {
+    if (logo.dataset.src !== logoUrl) {
+      logo.dataset.src = logoUrl;
+      logo.onload = () => { logo.style.display = 'block'; };
+      logo.onerror = () => { logo.style.display = 'none'; };
+      logo.src = logoUrl;
+    }
+  } else { logo.style.display = 'none'; logo.removeAttribute('src'); delete logo.dataset.src; }
+
+  const period = String(rd.period || '').trim();
+  $('mid').innerHTML =
+    // сол жақ: негізгі сандар
+    '<section class="panel kpis">' +
+      '<div class="kpi kpi-now"><div class="lbl"><i class="live"></i>Қазір кітапханада</div>' + numHtml('now', main.now) + '</div>' +
+      '<div class="kpi kpi-served"><div class="lbl">Бүгін қызмет көрсетілді</div>' + numHtml('served', main.served) + '</div>' +
+      '<div class="docs"><div class="dt">Берілген құжат</div>' +
+        '<span class="dr">Бүгін</span>' + numHtml('it', main.issuedToday, 'dv') +
+        '<span class="dr">Осы ай</span>' + numHtml('im', main.issuedMonth, 'dv') +
+        '<span class="dr">Осы жыл</span>' + numHtml('iy', main.issuedYear, 'dv') +
+      '</div>' +
+    '</section>' +
+    // орта: келушілер ағыны және оқырмандар
+    '<div class="center">' +
+      '<section class="panel card"><div class="p-title">Бүгінгі келушілер ағыны</div><div class="box" id="hourChart"></div></section>' +
+      '<section class="panel card"><div class="p-title">Жаңа тіркелген оқырмандар</div><div class="readers">' +
+        '<div class="r-left">' +
+          '<div class="r-new">' + numHtml('rnew', rd.newCount) + (period ? '<div class="r-period">' + esc(period) + '</div>' : '') + '</div>' +
+          '<div class="gender"><div><div class="lbl">Ер</div>' + numHtml('male', rd.male) + '</div>' +
+            '<div class="g2"><div class="lbl">Әйел</div>' + numHtml('female', rd.female) + '</div>' + genderBar(rd.male, rd.female) + '</div>' +
+        '</div>' +
+        '<div class="r-right"><div class="lbl">Әлеуметтік мәртебесі бойынша</div><div class="box">' + hbarsHtml(rd.status, MAX_STATUS, 'st:') + '</div></div>' +
+      '</div></section>' +
+    '</div>' +
+    // оң жақ: кітаптар
+    '<section class="panel card"><div class="p-title">Ең көп сұралған басылымдар</div><div class="box" style="display:flex">' + booksHtml(groups) + '</div></section>';
+
+  // төменгі қатар
+  const totals = (d.totals || []).filter(t => t && String(t.label || '').trim() !== '').slice(0, 4);
+  const tItems = totals.length ? totals : TOTAL_LABELS.map(l => ({label: l, value: null}));
+  let bot = '<section class="panel totals"><div class="p-title">Жалпы көрсеткіштер</div><div class="t-grid">' +
+    tItems.map(t => '<div class="t-item"><div class="lbl">' + esc(t.label) + '</div>' + numHtml('t:' + t.label, t.value) + '</div>').join('') +
+    '</div></section>' +
+    '<section class="panel cats"><div class="p-title">Санаттар бойынша сұраныс</div><div class="box" id="catChart"></div></section>';
+  const qrs = [[st.qr1Title, st.qr1Url], [st.qr2Title, st.qr2Url]]
+    .map(q => ({title: String(q[0] || '').trim(), url: String(q[1] || '').trim()}))
+    .filter(q => q.url).map(q => ({title: q.title, svg: qrSvg(q.url)})).filter(q => q.svg);
+  if (qrs.length) {
+    bot += '<section class="panel qrs">' + qrs.map(q =>
+      '<div class="qr"><div class="qr-img">' + q.svg + '</div>' + (q.title ? '<span>' + esc(q.title) + '</span>' : '') + '</div>').join('') + '</section>';
+  }
+  $('bottom').innerHTML = bot;
+
+  // графиктер мен тізімдер (өлшем DOM-ға қойылғаннан кейін белгілі болады)
+  lineChart($('hourChart'), d.hourly);
+  barChart($('catChart'), d.categories);
+  startBooks(groups);
+  animateNums($('stage'));
+}
+
+/* ---------- деректі алу және жаңарту ---------- */
+let lastJson = null;      // экранда тұрған деректің JSON мәтіні
+let lastOkTime = null;    // соңғы сәтті жаңарту уақыты (ms)
+let refreshSec = DEFAULT_REFRESH_SEC;
+
+function hm(ms){ const d = new Date(ms); return pad2(d.getHours()) + ':' + pad2(d.getMinutes()); }
+function setStatus(failed){
+  let s = '';
+  if (failed) s += '<span class="st-err">Деректерге қосыла алмадық</span>';
+  if (lastOkTime) s += '<span>Соңғы жаңарту: <span class="tn">' + hm(lastOkTime) + '</span></span>';
+  $('status').innerHTML = s;
+}
+function showMessage(title, text){
+  document.body.classList.remove('loading');
+  document.body.classList.add('state-message');
+  $('titleBox').innerHTML = '';
+  $('msgTitle').textContent = title;
+  $('msgText').textContent = text || '';
+}
+function showData(json){
+  if (json === lastJson) return;
+  const d = JSON.parse(json);
+  document.body.classList.remove('loading', 'state-message');
+  render(d);
+  lastJson = json;
+  const r = Number(d.settings && d.settings.refreshSec);
+  refreshSec = isFinite(r) && r > 0 ? Math.max(MIN_REFRESH_SEC, Math.min(3600, r)) : DEFAULT_REFRESH_SEC;
+}
+function payloadOf(d){   // салыстыру үшін: серверлік уақыт белгісінсіз
+  const c = Object.assign({}, d); delete c.generatedAt; return JSON.stringify(c);
+}
+
+async function load(){
+  if (!API_URL) {
+    showMessage('Деректер көзі бапталмаған', 'index.html файлындағы API_URL айнымалысына Apps Script Web App сілтемесін қойыңыз.');
+    return;
+  }
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(API_URL + (API_URL.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now(), {cache: 'no-store', redirect: 'follow', signal: ctl.signal});
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const d = await res.json();
+    if (!d || d.ok !== true) throw new Error((d && d.error) || 'ok=false');
+    const json = payloadOf(d);
+    lastOkTime = Date.now();
+    showData(json);
+    setStatus(false);
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({time: lastOkTime, json: json})); } catch (e) {}
+  } catch (err) {
+    console.warn('Дерек алынбады:', err);
+    if (!lastJson) {      // осы сеанста дерек әлі жоқ: бұрын сақталған соңғы нұсқаны көреміз
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+        if (saved && saved.json) { lastOkTime = saved.time; showData(saved.json); }
+      } catch (e) {}
+    }
+    if (lastJson) setStatus(true);
+    else showMessage('Деректерге қосыла алмадық', 'Байланыс қалпына келгенде панель өздігінен жаңарады.');
+  } finally {
+    clearTimeout(timer);
+    setTimeout(load, refreshSec * 1000);
+  }
+}
+(document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(load, load);
+</script>
+</body>
+</html>
